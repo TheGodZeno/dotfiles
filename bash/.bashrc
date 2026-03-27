@@ -26,4 +26,4 @@ unset rc
 . "$HOME/.cargo/env"
 eval "$(starship init bash)"
 [[ ":$PATH:" != *":$HOME/bin:"* ]] && export PATH="$HOME/bin:$PATH"
-export BROWSER="powershell.exe /c start 'C:\Program Files\Mozilla Firefox\firefox.exe'"
+export BROWSER='cmd.exe /C start ""' 
