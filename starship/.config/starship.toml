@@ -2,9 +2,14 @@
 
 format = """
 $os\
+$netns\
+$sudo\
 $username\
 $directory\
 $git_branch\
+$git_commit\
+$git_state\
+$git_metrics\
 $git_status\
 $fill\
 $hostname\
@@ -17,13 +22,15 @@ $gradle\
 $nodejs\
 $php\
 $java\
+$julia\
 $kotlin\
+$lua\
 $haskell\
 $python\
 $docker_context\
 $conda\
 $pixi\
-($cmd_duration)$time\
+($cmd_duration$jobs$status)$time\
 $line_break$shell$character"""
 
 palette = 'catppuccin_frappe'
@@ -55,8 +62,13 @@ Redhat = "󱄛 "
 RedHatEnterprise = "󱄛 "
 Pop = " "
 
+[sudo]
+disabled = false
+format = '[ ]($style)'
+
 [username]
 show_always = true
+style_user = "bold maroon"
 
 [directory]
 truncation_length = 4
@@ -70,11 +82,14 @@ truncation_symbol = "…/"
 "Developer" = "󰲋 "
 
 [git_branch]
-symbol = ""
-format = '[$symbol $branch]($style)'
+symbol = ""
+format = 'on [$symbol $branch(:$remote_branch) ]($style)'
 
 [git_status]
 format = '[($all_status$ahead_behind )]($style)'
+
+[git_metrics]
+disabled = false
 
 [fill]
 symbol = ' '
@@ -83,8 +98,24 @@ symbol = ' '
 symbol = " "
 style = "bold deep-blue"
 
+[jobs]
+symbol = "[ ](blue italic)"
+
+[julia]
+symbol = " "
+
+[lua]
+symbol = "󰢱 "
+
+# Need to configure :/
+[kubernetes]
+
+[netns]
+symbol = "🌐 "
+style = "bold yellow"
+
 [hostname]
-ssh_symbol = "🌏"
+ssh_symbol = "🌏 "
 style = "bold teal"
 
 [nodejs]
@@ -135,6 +166,11 @@ symbol = " "
 
 [pixi]
 
+[status]
+format = '[$symbol $status ]($style)'
+disabled = false
+style = "red"
+
 [cmd_duration]
 show_milliseconds = true
 format = "[ 󱦟 $duration ]($style)"
@@ -145,6 +181,7 @@ min_time_to_notify = 45000
 
 [time]
 disabled = false
+style = "bold flamingo"
 time_format = "%R"
 format = '[ $time]($style)'
 
