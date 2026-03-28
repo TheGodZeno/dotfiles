@@ -1,9 +1,7 @@
 # .bashrc
 
 # Source global definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
+[ -f /etc/bashrc ] && . /etc/bashrc
 
 # Only continue for interactive shells
 case $- in
