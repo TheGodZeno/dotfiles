@@ -113,6 +113,7 @@ read_only = ' '
 [git_branch]
 symbol = ""
 format = 'on [$symbol $branch(:$remote_branch) ]($style)'
+style = "bold green"
 
 [git_commit]
 only_detached = true
