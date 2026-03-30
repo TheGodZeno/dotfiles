@@ -72,7 +72,7 @@ Pop = " "
 show_always = true
 style_user = "bold yellow"
 style_root = "bold red"
-format = 'as [$user ]($style)'
+format = '[$user ]($style)'
 
 [directory]
 style = "bold lavender"
