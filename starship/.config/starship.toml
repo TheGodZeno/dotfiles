@@ -3,7 +3,6 @@
 format = """
 $os\
 $netns\
-$sudo\
 $username\
 $directory\
 $git_branch\
@@ -63,10 +62,11 @@ Redhat = "󱄛 "
 RedHatEnterprise = "󱄛 "
 Pop = " "
 
-[sudo]
-disabled = false
-format = '[ ]($style)'
-style = "bold red"
+# Use when needed :/
+#[sudo]
+#disabled = false
+#format = '[ ]($style)'
+#style = "bold red"
 
 [username]
 show_always = true
