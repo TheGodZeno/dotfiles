@@ -3,7 +3,6 @@
 format = """
 $os\
 $netns\
-$sudo\
 $username\
 $directory\
 $git_branch\
@@ -63,16 +62,17 @@ Redhat = "󱄛 "
 RedHatEnterprise = "󱄛 "
 Pop = " "
 
-[sudo]
-disabled = false
-format = '[ ]($style)'
-style = "bold red"
+# Use when needed :/
+#[sudo]
+#disabled = false
+#format = '[ ]($style)'
+#style = "bold red"
 
 [username]
 show_always = true
 style_user = "bold yellow"
 style_root = "bold red"
-format = 'as [$user ]($style)'
+format = '[$user ]($style)'
 
 [directory]
 style = "bold lavender"
@@ -112,7 +112,7 @@ read_only = ' '
 
 [git_branch]
 symbol = ""
-format = 'on [$symbol $branch(:$remote_branch) ]($style)'
+format = 'on [$symbol ]($style)[$branch(:$remote_branch) ]($style)'
 style = "bold green"
 ignore_branches = ['master', 'main']
 
