@@ -112,7 +112,7 @@ read_only = ' '
 
 [git_branch]
 symbol = ""
-format = 'on [$symbol $branch(:$remote_branch) ]($style)'
+format = 'on [$symbol ]($style)[$branch(:$remote_branch) ]($style)'
 style = "bold green"
 ignore_branches = ['master', 'main']
 
