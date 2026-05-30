@@ -1,6 +1,18 @@
 # Tool integrations
 
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-command -v fzf >/dev/null 2>&1 && eval "$(fzf --bash)"
 
-command -v direnv >/dev/null 2>&1 && eval "$(direnv hook bash)"
+# fzf
+if command -v fzf >/dev/null 2>&1; then 
+    eval "$(fzf --bash)"
+fi
+
+# direnv
+if command -v direnv >/dev/null 2>&1; then 
+    eval "$(direnv hook bash)"
+fi
+
+# mise
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)"
+fi

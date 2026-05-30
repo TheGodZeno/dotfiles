@@ -1,5 +1,7 @@
 # User specific environment
 path_prepend() {
+  [ -d "$1" ] || return 0
+
   case ":$PATH:" in
   *":$1:"*) ;;
   *) PATH="$1:$PATH" ;;
@@ -7,6 +9,8 @@ path_prepend() {
 }
 
 path_append() {
+  [ -d "$1" ] || return 0
+
   case ":$PATH:" in
   *":$1:"*) ;;
   *) PATH="$PATH:$1" ;;
