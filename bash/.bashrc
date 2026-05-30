@@ -12,9 +12,6 @@ esac
 # Preferred browser
 export BROWSER='cmd.exe /C start ""'
 
-# Rust environment
-[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
-
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 
