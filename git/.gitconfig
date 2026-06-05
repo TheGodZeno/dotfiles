@@ -21,6 +21,6 @@
 [include]
     path = ~/.gitconfig.local
 
-# Work identity (local only)
-[includeIf "gitdir:~/workspace/"]
+# Work identity (local only) - change path if needed
+[includeIf "gitdir:~/code/work/"]
     path = ~/.gitconfig-work
