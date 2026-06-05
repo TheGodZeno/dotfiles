@@ -1,0 +1,26 @@
+# Public dotfiles contain no identities.
+#
+# Create:
+#   ~/.gitconfig.local
+#   ~/.gitconfig-work
+#
+# Example templates:
+#   ~/dotfiles/git/gitconfig.local.example
+#   ~/dotfiles/git/gitconfig.work.example
+
+[push]
+    autoSetupRemote = true
+
+[fetch]
+    prune = true
+
+[init]
+    defaultBranch = main
+
+# Personal identity (local only)
+[include]
+    path = ~/.gitconfig.local
+
+# Work identity (local only)
+[includeIf "gitdir:~/workspace/"]
+    path = ~/.gitconfig-work

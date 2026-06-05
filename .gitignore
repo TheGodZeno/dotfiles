@@ -1,0 +1,14 @@
+# SSH stuff
+ssh/
+.ssh/
+**/id_rsa
+**/id_ed25519
+**/id_ecdsa
+**/known_hosts
+**/authorized_keys
+**/config
+*.pem
+
+# Work-specific git config
+.gitconfig-work
+.gitconfig.local
