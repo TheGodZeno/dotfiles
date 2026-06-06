@@ -1,0 +1,9 @@
+# Copy to ~/.gitconfig-work
+
+[user]
+    name = YOUR_WORK_NAME
+    email = YOUR_WORK_EMAIL
+
+# Optional SSH key for work repositories
+#[core]
+#    sshCommand = ssh -i ~/.ssh/work-key -o IdentitiesOnly=yes

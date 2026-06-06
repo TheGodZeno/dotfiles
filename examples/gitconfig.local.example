@@ -1,0 +1,5 @@
+# Copy to ~/.gitconfig.local
+
+[user]
+    name = YOUR_NAME
+    email = YOUR_PERSONAL_EMAIL
