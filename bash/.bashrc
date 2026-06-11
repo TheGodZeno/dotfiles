@@ -9,12 +9,6 @@ case $- in
 *) return ;;
 esac
 
-# Preferred browser
-export BROWSER='cmd.exe /C start ""'
-
-# Uncomment the following line if you don't like systemctl's auto-paging feature:
-# export SYSTEMD_PAGER=
-
 # Load modular shell config
 if [ -d "$HOME/.bashrc.d" ]; then
   for rc in "$HOME"/.bashrc.d/*.sh; do
