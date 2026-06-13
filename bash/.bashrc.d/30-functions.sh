@@ -81,14 +81,16 @@ split_certs() {
         file=sprintf("%s/cert%d.crt", outdir, n)
     }
 
-    {
+    n > 0 {
         print > file
     }
 
     /-----END CERTIFICATE-----/ {
         close(file)
     }
-    ' "$bundle"
 
-    echo "Extracted $n certificates into $outdir"
+    END {
+      printf "Extracted " n " certificates into " outdir
+    }
+    ' "$bundle"
 }
