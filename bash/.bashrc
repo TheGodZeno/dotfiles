@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC1090,SC1091
 # .bashrc
 
 # Source global definitions

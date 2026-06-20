@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC1090,SC1091
 # bash completion
 if [ -r /usr/share/bash-completion/bash_completion ]; then
   . /usr/share/bash-completion/bash_completion

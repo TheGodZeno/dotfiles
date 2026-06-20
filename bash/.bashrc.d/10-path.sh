@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # User specific environment
 path_prepend() {
   [ -d "$1" ] || return 0

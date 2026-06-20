@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC1091
 # Tool integrations
 
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -8,11 +9,11 @@ if command -v mise >/dev/null 2>&1; then
 fi
 
 # fzf
-if command -v fzf >/dev/null 2>&1; then 
-    eval "$(fzf --bash)"
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --bash)"
 fi
 
 # direnv
-if command -v direnv >/dev/null 2>&1; then 
-    eval "$(direnv hook bash)"
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook bash)"
 fi

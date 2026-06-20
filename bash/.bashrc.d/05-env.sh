@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # environment variables
 export EDITOR="${EDITOR:-nvim}"
 export VISUAL="${VISUAL:-$EDITOR}"
@@ -10,4 +11,3 @@ export LESS="${LESS:--R}"
 if grep -qi microsoft /proc/version 2>/dev/null; then
   export BROWSER='cmd.exe /C start ""'
 fi
-
