@@ -11,6 +11,7 @@ Use `dnf`/`apt` for stable system tools:
 - openssh-client
 - bash-completion
 - jq/yq
+- git-delta
 - shellcheck/shfmt
 - fzf/eza/fd/ripgrep/bat when distro versions are good enough
 
