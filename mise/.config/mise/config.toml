@@ -1,0 +1,14 @@
+# Global mise tools.
+# Keep project-specific versions in each repo's mise.toml.
+
+[tools]
+go = "1.24.4"
+node = "lts"
+python = "3.12"
+usage = "latest"
+lazygit = "latest"
+yazi = "latest"
+
+[settings]
+experimental = true
+idiomatic_version_file_enable_tools = ["node", "python", "go"]
