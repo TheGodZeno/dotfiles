@@ -30,3 +30,9 @@ Only prepare local Git config examples:
 ```bash
 ./scripts/bootstrap-git
 ```
+
+Check the setup without installing or changing files:
+
+```bash
+./scripts/doctor
+```

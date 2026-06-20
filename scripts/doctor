@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -u
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PACKAGES=(bash git tmux starship lazygit mise)
+REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg fd bat jq shellcheck shfmt)
+FAILED=0
+
+pass() {
+  printf 'ok   %s\n' "$1"
+}
+
+warn() {
+  printf 'warn %s\n' "$1"
+}
+
+fail() {
+  printf 'fail %s\n' "$1"
+  FAILED=1
+}
+
+has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+check_command() {
+  local cmd="$1"
+
+  if has "$cmd"; then
+    pass "command: $cmd"
+  else
+    fail "missing command: $cmd"
+  fi
+}
+
+check_file() {
+  local path="$1"
+
+  if [[ -e "$path" ]]; then
+    pass "file: ${path#"$ROOT"/}"
+  else
+    fail "missing file: ${path#"$ROOT"/}"
+  fi
+}
+
+check_git_placeholders() {
+  local path="$1"
+
+  if [[ ! -e "$path" ]]; then
+    return
+  fi
+
+  if grep -Eq 'YOUR_(NAME|PERSONAL_EMAIL|WORK_NAME|WORK_EMAIL)' "$path"; then
+    warn "edit placeholder values in ${path#"$ROOT"/}"
+  else
+    pass "no placeholders in ${path#"$ROOT"/}"
+  fi
+}
+
+check_stow_package() {
+  local package="$1"
+  local target
+
+  target="$(mktemp -d)"
+
+  if stow -n -t "$target" "$package" >/dev/null 2>&1; then
+    pass "stow simulation: $package"
+  else
+    fail "stow simulation failed: $package"
+  fi
+
+  rm -rf "$target"
+}
+
+echo "==> Dotfiles doctor"
+echo "root: $ROOT"
+echo
+
+echo "==> Commands"
+for cmd in "${REQUIRED_COMMANDS[@]}"; do
+  check_command "$cmd"
+done
+echo
+
+echo "==> Git config"
+check_file "$ROOT/git/.gitconfig"
+check_file "$ROOT/git/.gitconfig.local"
+check_file "$ROOT/git/.gitconfig.work"
+check_git_placeholders "$ROOT/git/.gitconfig.local"
+check_git_placeholders "$ROOT/git/.gitconfig.work"
+
+if git config --file "$ROOT/git/.gitconfig" --list >/dev/null 2>&1; then
+  pass "git/.gitconfig parses"
+else
+  fail "git/.gitconfig does not parse"
+fi
+echo
+
+echo "==> Stow packages"
+if has stow; then
+  cd "$ROOT" || exit 1
+  for package in "${PACKAGES[@]}"; do
+    if [[ -d "$package" ]]; then
+      check_stow_package "$package"
+    else
+      warn "package directory missing: $package"
+    fi
+  done
+else
+  fail "cannot run stow simulations without stow"
+fi
+echo
+
+if [[ "$FAILED" -eq 0 ]]; then
+  echo "doctor passed"
+else
+  echo "doctor found issues"
+fi
+
+exit "$FAILED"

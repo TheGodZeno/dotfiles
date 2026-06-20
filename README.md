@@ -25,6 +25,27 @@ To skip OS package and mise setup while still preparing tmux and stowing files:
 ./scripts/bootstrap --no-tools
 ```
 
+Check the setup without changing dotfiles:
+
+```bash
+./scripts/doctor
+```
+
+## Update
+
+Pull the latest repo changes and restow:
+
+```bash
+git pull
+./scripts/bootstrap --no-tools
+```
+
+Run the doctor after larger changes:
+
+```bash
+./scripts/doctor
+```
+
 ## Packages
 
 Each top-level directory is a Stow package whose layout mirrors `$HOME`.
@@ -73,6 +94,16 @@ git/.gitconfig.work  -> ~/.gitconfig.work
 
 Bootstrap creates those files from `examples/` only if they do not already exist. Edit them after the first run. Change the work repository path in `git/.gitconfig` if your work repos are not under `~/code/work/`.
 
+## Local Overrides
+
+Machine-specific Bash settings can live in:
+
+```text
+~/.bashrc.local
+```
+
+That file is sourced by `bash/.bashrc.d/99-local.sh` and is intentionally outside the repo.
+
 ## Git Defaults
 
 The shared Git config includes a few quality-of-life defaults:
@@ -87,6 +118,26 @@ diff.algorithm = histogram     produce cleaner diffs
 diff.colorMoved = default      highlight moved code blocks
 merge.conflictStyle = zdiff3   include the original base in conflicts
 rerere.enabled = true          remember repeated conflict resolutions
+```
+
+## Secrets
+
+Do not commit secrets or machine-local private files:
+
+```text
+SSH private keys
+API tokens
+passwords
+private certificates
+private Git identity files
+machine-local shell overrides
+```
+
+Private Git identity files live in the repo working tree so Stow can link them, but they are ignored by Git:
+
+```text
+git/.gitconfig.local
+git/.gitconfig.work
 ```
 
 ## Docs
