@@ -1,4 +1,4 @@
-# Copy to ~/.gitconfig.local
+# Copy to git/.gitconfig.local, edit it, then run `stow git`.
 
 [user]
     name = YOUR_NAME

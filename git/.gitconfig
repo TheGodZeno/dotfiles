@@ -1,26 +1,76 @@
 # Public dotfiles contain no identities.
 #
-# Create:
-#   ~/.gitconfig.local
-#   ~/.gitconfig-work
+# Run `scripts/bootstrap-git` to create ignored local config files:
+#   git/.gitconfig.local
+#   git/.gitconfig.work
 #
-# Example templates:
-#   ~/dotfiles/git/gitconfig.local.example
-#   ~/dotfiles/git/gitconfig.work.example
+# They are ignored by Git, but `stow git` links them to:
+#   ~/.gitconfig.local
+#   ~/.gitconfig.work
 
 [push]
     autoSetupRemote = true
+    followTags = true
 
 [fetch]
     prune = true
+    pruneTags = true
+    all = true
 
 [init]
     defaultBranch = main
+
+# Cleaner diffs, especially when code blocks move or indentation changes.
+[diff]
+    algorithm = histogram
+    colorMoved = default
+    colorMovedWS = allow-indentation-change
+    mnemonicPrefix = true
+    renames = true
+
+# Show the base version inside merge conflicts.
+[merge]
+    conflictStyle = zdiff3
+
+# Remember conflict resolutions and offer them again next time.
+[rerere]
+    enabled = true
+
+# Better output of commands like clean, status and tag...
+[column]
+    ui = auto
+
+# Put the most recently changed branches first.
+[branch]
+    sort = -committerdate
+
+# Sort version-like tags naturally.
+[tag]
+    sort = version:refname
+
+# Show the staged diff in the commit message editor.
+[commit]
+    verbose = true
+
+# Show stash count in `git status`.
+[status]
+    showStash = true
+
+# Make `fixup!` and `squash!` commits line up automatically in interactive rebase.
+[rebase]
+    autoSquash = true
+#    autoStash = true
+#    updateRefs = true
+
+# Ask before running a corrected command when Git recognizes a typo.
+[help]
+    autoCorrect = prompt
 
 # Personal identity (local only)
 [include]
     path = ~/.gitconfig.local
 
-# Work identity (local only) - change path if needed
+# Work identity for repositories under this path.
+# Change the gitdir path if your work repos live somewhere else.
 [includeIf "gitdir:~/code/work/"]
-    path = ~/.gitconfig-work
+    path = ~/.gitconfig.work

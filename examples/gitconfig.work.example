@@ -1,4 +1,4 @@
-# Copy to ~/.gitconfig-work
+# Copy to git/.gitconfig.work, edit it, then run `stow git`.
 
 [user]
     name = YOUR_WORK_NAME

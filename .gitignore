@@ -12,3 +12,4 @@ ssh/
 # Work-specific git config
 .gitconfig-work
 .gitconfig.local
+.gitconfig.work
