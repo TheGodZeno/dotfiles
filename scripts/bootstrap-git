@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NEEDS_EDIT=0
+
+seed_file() {
+  local src="$1"
+  local dst="$2"
+
+  if [[ ! -e "$dst" && ! -r "$src" ]]; then
+    echo "missing template: ${src#"$ROOT"/}" >&2
+    return 1
+  fi
+
+  if [[ ! -e "$dst" ]]; then
+    echo "creating ${dst#"$ROOT"/} from ${src#"$ROOT"/}"
+    cp "$src" "$dst"
+    NEEDS_EDIT=1
+  else
+    echo "keeping ${dst#"$ROOT"/}"
+  fi
+}
+
+echo "==> Checking local Git config files"
+
+if [[ -e "$ROOT/git/.gitconfig-work" && ! -e "$ROOT/git/.gitconfig.work" ]]; then
+  echo "renaming git/.gitconfig-work to git/.gitconfig.work"
+  mv "$ROOT/git/.gitconfig-work" "$ROOT/git/.gitconfig.work"
+fi
+
+seed_file "$ROOT/examples/gitconfig.local.example" "$ROOT/git/.gitconfig.local"
+seed_file "$ROOT/examples/gitconfig.work.example" "$ROOT/git/.gitconfig.work"
+
+if grep -Eq 'YOUR_(NAME|PERSONAL_EMAIL)' "$ROOT/git/.gitconfig.local"; then
+  NEEDS_EDIT=1
+fi
+
+if grep -Eq 'YOUR_(WORK_NAME|WORK_EMAIL)' "$ROOT/git/.gitconfig.work"; then
+  NEEDS_EDIT=1
+fi
+
+if [[ "$NEEDS_EDIT" -eq 1 ]]; then
+  echo
+  echo "Edit these local Git config files before committing:"
+  echo "  ${ROOT#"$HOME"/}/git/.gitconfig.local"
+  echo "  ${ROOT#"$HOME"/}/git/.gitconfig.work"
+  echo
+fi

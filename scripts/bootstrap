@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PACKAGES=(bash git tmux starship lazygit mise)
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "missing required command: $1" >&2
+    return 1
+  }
+}
+
+need stow
+
+echo "==> Bootstrapping dotfiles from $ROOT"
+
+if [[ "${1:-}" == "--no-tools" ]]; then
+  SKIP_TOOLS=1
+else
+  SKIP_TOOLS=0
+fi
+
+if [[ "$SKIP_TOOLS" -eq 0 ]]; then
+  echo "==> Installing system tools and mise"
+  "$ROOT/scripts/bootstrap-tools"
+else
+  echo "==> Skipping system tools and mise"
+fi
+
+echo "==> Preparing tmux TPM"
+"$ROOT/scripts/bootstrap-tmux"
+
+echo "==> Preparing Git config"
+"$ROOT/scripts/bootstrap-git"
+
+cd "$ROOT"
+echo "==> Stowing packages into $HOME"
+for pkg in "${PACKAGES[@]}"; do
+  if [[ -d "$pkg" ]]; then
+    echo "stowing $pkg"
+    stow -t "$HOME" "$pkg"
+  fi
+done
+
+echo "==> Done"

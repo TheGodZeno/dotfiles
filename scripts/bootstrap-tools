@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+has() { command -v "$1" >/dev/null 2>&1; }
+
+install_fedora() {
+  sudo dnf install -y \
+    git stow curl wget unzip tar xz \
+    bash-completion ca-certificates openssh-clients \
+    eza fd-find ripgrep fzf bat jq yq shellcheck shfmt \
+    tmux direnv zoxide neovim
+}
+
+install_ubuntu() {
+  sudo apt-get update
+  sudo apt-get install -y \
+    git stow curl wget unzip tar xz-utils \
+    bash-completion ca-certificates openssh-client \
+    eza fd-find ripgrep fzf bat jq shellcheck shfmt \
+    tmux direnv zoxide neovim
+}
+
+install_mise() {
+  if ! has mise; then
+    curl https://mise.run | sh
+  fi
+}
+
+case "${1:-}" in
+  --no-packages) install_mise; exit 0 ;;
+esac
+
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  case "${ID:-}" in
+    fedora|rhel|centos) install_fedora ;;
+    ubuntu|debian) install_ubuntu ;;
+    *) echo "unknown distro: ${ID:-unknown}; install packages manually" >&2 ;;
+  esac
+fi
+
+install_mise
