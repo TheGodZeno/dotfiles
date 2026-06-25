@@ -26,4 +26,8 @@ fi
 # oc completion
 if command -v oc >/dev/null 2>&1; then
   source <(oc completion bash)
+
+  if complete -p oc >/dev/null 2>&1; then
+    complete -F __start_oc ocas
+  fi
 fi
