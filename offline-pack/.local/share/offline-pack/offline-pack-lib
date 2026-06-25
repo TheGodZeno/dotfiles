@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+
+offline_die() {
+  echo "ERROR: $*" >&2
+  return 1
+}
+
+offline_require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || offline_die "required command not found: $1"
+}
+
+offline_require_cmds() {
+  local cmd
+
+  for cmd in "$@"; do
+    offline_require_cmd "$cmd" || return 1
+  done
+}
+
+offline_to_bytes() {
+  local value="$1"
+
+  case "$value" in
+    *Ki|*Mi|*Gi|*Ti)
+      numfmt --from=iec-i -- "$value"
+      ;;
+    *K|*M|*G|*T)
+      numfmt --from=si -- "$value"
+      ;;
+    *[!0-9]*)
+      offline_die "invalid size: $value. Use examples like 150Mi, 150M, 3Gi, 3G"
+      ;;
+    *)
+      printf '%s\n' "$value"
+      ;;
+  esac
+}
+
+offline_human_bytes() {
+  numfmt --to=iec-i --suffix=B -- "$1"
+}
+
+offline_manifest_value() {
+  local manifest_file="$1"
+  local key="$2"
+
+  awk -F': +' -v key="$key" '$1 == key {print $2; exit}' "$manifest_file"
+}
+
+offline_make_dirs() {
+  mkdir --parents -- "$@"
+}
+
+offline_latest_pack() {
+  local root="${1:-${XDG_STATE_HOME:-$HOME/.local/state}/offline-packs}"
+
+  find "$root" -maxdepth 1 -type d -name 'offline-pack-*' 2>/dev/null \
+    | sort \
+    | tail --lines=1
+}
+
+offline_decode_parts_to_file() {
+  local payload_dir="$1"
+  local output_file="$2"
+  local part
+
+  shopt -s nullglob
+  local parts=( "${payload_dir}"/part-*.b64 )
+  shopt -u nullglob
+
+  [[ "${#parts[@]}" -gt 0 ]] || offline_die "no part-*.b64 files found in: $payload_dir"
+
+  : > "$output_file"
+
+  for part in "${parts[@]}"; do
+    echo "Decoding: $part"
+    base64 --decode -- "$part" >> "$output_file"
+  done
+}
+
+offline_write_file_checksum() {
+  local file="$1"
+  local output_file="$2"
+  local file_realpath
+  local parent
+  local name
+
+  file_realpath="$(realpath -- "$file")"
+  parent="$(dirname -- "$file_realpath")"
+  name="$(basename -- "$file_realpath")"
+
+  (
+    cd "$parent" || return 1
+    sha256sum -- "$name"
+  ) > "$output_file"
+}
+
+offline_append_input_checksums() {
+  local output_file="$1"
+  shift
+
+  local item
+  local item_realpath
+  local parent
+  local name
+
+  : > "$output_file"
+
+  for item in "$@"; do
+    item_realpath="$(realpath -- "$item")"
+    parent="$(dirname -- "$item_realpath")"
+    name="$(basename -- "$item_realpath")"
+
+    if [[ -f "$item_realpath" ]]; then
+      (
+        cd "$parent" || return 1
+        sha256sum -- "$name"
+      ) >> "$output_file"
+
+    elif [[ -d "$item_realpath" ]]; then
+      (
+        cd "$parent" || return 1
+        find "$name" -type f -print0 \
+          | sort --zero-terminated \
+          | xargs --null sha256sum
+      ) >> "$output_file"
+    fi
+  done
+}
+
+offline_total_input_size_bytes() {
+  local total=0
+  local item
+  local size
+
+  for item in "$@"; do
+    size="$(du --bytes --summarize -- "$item" | awk '{print $1}')"
+    total=$((total + size))
+  done
+
+  printf '%s\n' "$total"
+}
+
+offline_write_inputs_file() {
+  local output_file="$1"
+  shift
+
+  local item
+
+  : > "$output_file"
+
+  for item in "$@"; do
+    realpath -- "$item" >> "$output_file"
+  done
+}
+
+offline_base64_split_parts() {
+  local payload_dir="$1"
+  local part
+
+  for part in "${payload_dir}"/part-*; do
+    [[ -f "$part" ]] || continue
+    base64 --wrap=0 -- "$part" > "${part}.b64"
+    rm --force -- "$part"
+  done
+}
+
+offline_sum_b64_payload_bytes() {
+  local payload_dir="$1"
+
+  find "$payload_dir" -maxdepth 1 -type f -name 'part-*.b64' -printf '%s\n' \
+    | awk '{s+=$1} END {print s+0}'
+}
+
+offline_count_parts() {
+  local payload_dir="$1"
+
+  find "$payload_dir" -maxdepth 1 -type f -name 'part-*.b64' \
+    | wc --lines
+}

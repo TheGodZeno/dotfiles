@@ -36,3 +36,9 @@ Check the setup without installing or changing files:
 ```bash
 ./scripts/doctor
 ```
+
+The default bootstrap stows these packages:
+
+```text
+bash git tmux starship lazygit mise offline-pack
+```

@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LIB="${XDG_DATA_HOME:-$HOME/.local/share}/offline-pack/offline-pack-lib"
+# shellcheck source=/dev/null
+source "$LIB"
+
+DEFAULT_OUTPUT_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/offline-packs"
+
+OUTPUT_ROOT="$DEFAULT_OUTPUT_ROOT"
+MAX_TOTAL_SIZE="3Gi"
+SPLIT_SIZE="150Mi"
+KEEP_XZ="true"
+
+usage() {
+  cat <<EOF
+Usage:
+  offline-pack [options] <file-or-dir> [...]
+
+Options:
+  --output-root <dir>       Output root directory
+  --split-size <size>       Raw split size before base64, default: ${SPLIT_SIZE}
+  --max-total-size <size>   Max total base64 size, default: ${MAX_TOTAL_SIZE}
+  --no-keep-xz              Remove payload.xz / payload.tar.xz after creating parts
+  --help                    Show help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output-root) OUTPUT_ROOT="${2:?missing value}"; shift 2 ;;
+    --split-size) SPLIT_SIZE="${2:?missing value}"; shift 2 ;;
+    --max-total-size) MAX_TOTAL_SIZE="${2:?missing value}"; shift 2 ;;
+    --no-keep-xz) KEEP_XZ="false"; shift ;;
+    --help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*) offline_die "unknown option: $1"; exit 1 ;;
+    *) break ;;
+  esac
+done
+
+[[ $# -ge 1 ]] || {
+  usage
+  exit 1
+}
+
+offline_require_cmds tar xz base64 sha256sum split realpath numfmt stat awk find sort wc tee date du dirname basename
+
+for item in "$@"; do
+  [[ -e "$item" ]] || {
+    offline_die "input not found: $item"
+    exit 1
+  }
+done
+
+MAX_TOTAL_BYTES="$(offline_to_bytes "$MAX_TOTAL_SIZE")"
+SPLIT_BYTES="$(offline_to_bytes "$SPLIT_SIZE")"
+
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+CREATED_ISO="$(date -Iseconds)"
+PACK_DIR="${OUTPUT_ROOT}/offline-pack-${TIMESTAMP}"
+
+PAYLOAD_DIR="${PACK_DIR}/payload"
+LOGS_DIR="${PACK_DIR}/logs"
+CHECKSUMS_DIR="${PACK_DIR}/checksums"
+
+offline_make_dirs "$PAYLOAD_DIR" "$LOGS_DIR" "$CHECKSUMS_DIR"
+
+LOG_FILE="${LOGS_DIR}/pack.out"
+exec > >(tee "$LOG_FILE") 2>&1
+
+MANIFEST_FILE="${PACK_DIR}/manifest.txt"
+ORIGINAL_SHA_FILE="${CHECKSUMS_DIR}/original.sha256"
+PARTS_SHA_FILE="${CHECKSUMS_DIR}/parts.sha256"
+INPUTS_FILE="${PACK_DIR}/inputs.txt"
+
+echo "[1/8] Preparing package"
+echo "Package directory: $PACK_DIR"
+echo "Max total size:    $MAX_TOTAL_SIZE ($(offline_human_bytes "$MAX_TOTAL_BYTES"))"
+echo "Split size:        $SPLIT_SIZE ($(offline_human_bytes "$SPLIT_BYTES"))"
+echo
+
+offline_write_inputs_file "$INPUTS_FILE" "$@"
+ORIGINAL_SIZE_BYTES="$(offline_total_input_size_bytes "$@")"
+
+if [[ $# -eq 1 && -f "$1" ]]; then
+  MODE="file"
+  INPUT_REALPATH="$(realpath -- "$1")"
+  PAYLOAD_FILE="${PAYLOAD_DIR}/payload.xz"
+
+  echo "[2/8] Writing original checksum"
+  offline_write_file_checksum "$INPUT_REALPATH" "$ORIGINAL_SHA_FILE"
+
+  echo "[3/8] Compressing file with xz"
+  xz -9e --threads=0 --check=sha256 --stdout -- "$INPUT_REALPATH" > "$PAYLOAD_FILE"
+else
+  MODE="archive"
+  PAYLOAD_FILE="${PAYLOAD_DIR}/payload.tar.xz"
+
+  echo "[2/8] Writing original checksums"
+  offline_append_input_checksums "$ORIGINAL_SHA_FILE" "$@"
+
+  echo "[3/8] Creating tar stream and compressing with xz"
+  tar --create --file=- -- "$@" \
+    | xz -9e --threads=0 --check=sha256 --stdout \
+    > "$PAYLOAD_FILE"
+fi
+
+echo "[4/8] Testing compressed payload"
+xz --test -- "$PAYLOAD_FILE"
+
+PAYLOAD_SIZE_BYTES="$(stat --format='%s' -- "$PAYLOAD_FILE")"
+ESTIMATED_B64_BYTES=$(( (PAYLOAD_SIZE_BYTES * 4 + 2) / 3 ))
+
+if (( ESTIMATED_B64_BYTES > MAX_TOTAL_BYTES )); then
+  offline_die "estimated base64 total exceeds max ${MAX_TOTAL_SIZE}. compressed=$(offline_human_bytes "$PAYLOAD_SIZE_BYTES") estimated_b64=$(offline_human_bytes "$ESTIMATED_B64_BYTES")"
+  exit 1
+fi
+
+echo "[5/8] Splitting compressed payload"
+split --bytes="$SPLIT_BYTES" --numeric-suffixes=0 --suffix-length=4 -- "$PAYLOAD_FILE" "${PAYLOAD_DIR}/part-"
+
+echo "[6/8] Base64 encoding split parts"
+offline_base64_split_parts "$PAYLOAD_DIR"
+
+if [[ "$KEEP_XZ" != "true" ]]; then
+  rm --force -- "$PAYLOAD_FILE"
+fi
+
+echo "[7/8] Writing part checksums"
+sha256sum -- "${PAYLOAD_DIR}"/part-*.b64 > "$PARTS_SHA_FILE"
+
+PART_COUNT="$(offline_count_parts "$PAYLOAD_DIR")"
+TOTAL_B64_BYTES="$(offline_sum_b64_payload_bytes "$PAYLOAD_DIR")"
+
+if (( ORIGINAL_SIZE_BYTES > 0 )); then
+  RATIO_PERCENT="$(awk -v c="$PAYLOAD_SIZE_BYTES" -v o="$ORIGINAL_SIZE_BYTES" 'BEGIN { printf "%.2f", (c / o) * 100 }')"
+else
+  RATIO_PERCENT="0.00"
+fi
+
+COMPRESSION_LABEL="xz -9e --threads=0 --check=sha256"
+[[ "$MODE" == "archive" ]] && COMPRESSION_LABEL="tar stream + xz -9e --threads=0 --check=sha256"
+
+echo "[8/8] Writing manifest"
+cat > "$MANIFEST_FILE" <<EOF
+Created:                  ${CREATED_ISO}
+Mode:                     ${MODE}
+Package directory:        ${PACK_DIR}
+Payload file:             $(basename -- "$PAYLOAD_FILE")
+Max total b64 size:       ${MAX_TOTAL_SIZE}
+Max total b64 bytes:      ${MAX_TOTAL_BYTES}
+Raw split size:           ${SPLIT_SIZE}
+Raw split bytes:          ${SPLIT_BYTES}
+Encoding:                 base64 per compressed part
+Compression:              ${COMPRESSION_LABEL}
+Original size bytes:      ${ORIGINAL_SIZE_BYTES}
+Compressed payload bytes: ${PAYLOAD_SIZE_BYTES}
+Estimated base64 bytes:   ${ESTIMATED_B64_BYTES}
+Actual base64 bytes:      ${TOTAL_B64_BYTES}
+Compression ratio:        ${RATIO_PERCENT}%
+Part count:               ${PART_COUNT}
+Keep xz payload:          ${KEEP_XZ}
+Inputs file:              inputs.txt
+Original checksums:       checksums/original.sha256
+Part checksums:           checksums/parts.sha256
+Log file:                 logs/pack.out
+EOF
+
+echo
+echo "========================================="
+echo "Offline pack completed"
+echo "========================================="
+echo "Mode:              $MODE"
+echo "Package directory: $PACK_DIR"
+echo "Payload directory: $PAYLOAD_DIR"
+echo "Parts created:     $PART_COUNT"
+echo "Original size:     $(offline_human_bytes "$ORIGINAL_SIZE_BYTES")"
+echo "Compressed size:   $(offline_human_bytes "$PAYLOAD_SIZE_BYTES")"
+echo "Base64 size:       $(offline_human_bytes "$TOTAL_B64_BYTES")"
+echo "Manifest:          $MANIFEST_FILE"
+echo "Checksums:         $CHECKSUMS_DIR"
+echo "Log file:          $LOG_FILE"
+echo
+echo "Restore with:"
+echo "  offline-restore '$PACK_DIR'"
+echo "========================================="

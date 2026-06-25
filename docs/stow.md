@@ -18,7 +18,7 @@ stow -t "$HOME" bash
 Stow all common packages:
 
 ```bash
-stow -t "$HOME" bash git tmux starship lazygit mise
+stow -t "$HOME" bash git tmux starship lazygit mise offline-pack
 ```
 
 Unstow:

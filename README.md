@@ -59,7 +59,7 @@ git/.gitconfig               -> ~/.gitconfig
 Current bootstrap packages:
 
 ```text
-bash git tmux starship lazygit mise
+bash git tmux starship lazygit mise offline-pack
 ```
 
 Useful Stow commands:
@@ -140,9 +140,33 @@ git/.gitconfig.local
 git/.gitconfig.work
 ```
 
+## Offline Pack
+
+`offline-pack` is a small Stow-managed toolkit for moving files through disconnected environments. It is kept in this repo because it is small, shell-only, and part of the local command set.
+
+Commands:
+
+```text
+offline-pack      create a compressed, split, base64 package
+offline-verify    verify package checksums and compressed payload integrity
+offline-list      print manifest and payload files
+offline-restore   restore a package into a directory
+```
+
+Basic flow:
+
+```bash
+offline-pack ./some-file-or-dir
+offline-verify ~/.local/state/offline-packs/offline-pack-YYYYmmdd-HHMMSS
+offline-restore ~/.local/state/offline-packs/offline-pack-YYYYmmdd-HHMMSS
+```
+
+The package is intentionally ordinary shell plus common GNU tools. If it becomes a standalone project later, split it into a separate repo and install it like any other CLI instead of making this dotfiles repo depend on a submodule.
+
 ## Docs
 
 - [Install](docs/install.md)
+- [Offline Pack](docs/offline-pack.md)
 - [GNU Stow](docs/stow.md)
 - [Tools](docs/tools.md)
 - [SSH](docs/ssh.md)

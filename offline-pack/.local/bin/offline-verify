@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LIB="${XDG_DATA_HOME:-$HOME/.local/share}/offline-pack/offline-pack-lib"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  echo "Usage: offline-verify <offline-pack-dir>"
+}
+
+if [[ "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+[[ $# -eq 1 ]] || {
+  usage
+  exit 1
+}
+
+offline_require_cmds xz base64 sha256sum awk mktemp cp
+
+PACK_DIR="$1"
+PAYLOAD_DIR="${PACK_DIR}/payload"
+CHECKSUMS_DIR="${PACK_DIR}/checksums"
+MANIFEST_FILE="${PACK_DIR}/manifest.txt"
+
+[[ -d "$PACK_DIR" ]] || offline_die "package directory not found: $PACK_DIR"
+[[ -d "$PAYLOAD_DIR" ]] || offline_die "payload directory not found: $PAYLOAD_DIR"
+[[ -f "$MANIFEST_FILE" ]] || offline_die "manifest not found: $MANIFEST_FILE"
+
+echo "[1/4] Verifying base64 part checksums"
+
+if [[ -f "${CHECKSUMS_DIR}/parts.sha256" ]]; then
+  (
+    cd "$PACK_DIR"
+    sha256sum --check "checksums/parts.sha256"
+  )
+else
+  echo "WARN: parts.sha256 not found"
+fi
+
+echo "[2/4] Reconstructing payload"
+
+TMP_DIR="$(mktemp --directory)"
+trap 'rm --recursive --force "$TMP_DIR"' EXIT
+TMP_PAYLOAD="${TMP_DIR}/payload.xz"
+
+PAYLOAD_BASENAME="$(offline_manifest_value "$MANIFEST_FILE" "Payload file")"
+PAYLOAD_FILE="${PAYLOAD_DIR}/${PAYLOAD_BASENAME}"
+
+if [[ -f "$PAYLOAD_FILE" ]]; then
+  cp -- "$PAYLOAD_FILE" "$TMP_PAYLOAD"
+else
+  offline_decode_parts_to_file "$PAYLOAD_DIR" "$TMP_PAYLOAD"
+fi
+
+echo "[3/4] Testing xz integrity"
+xz --test -- "$TMP_PAYLOAD"
+
+echo "[4/4] Done"
+echo
+echo "Offline package verified"
+echo "Package directory: $PACK_DIR"
+echo "Result: OK"

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LIB="${XDG_DATA_HOME:-$HOME/.local/share}/offline-pack/offline-pack-lib"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  echo "Usage: offline-list <offline-pack-dir>"
+}
+
+if [[ "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+[[ $# -eq 1 ]] || {
+  usage
+  exit 1
+}
+
+offline_require_cmds find sort
+
+PACK_DIR="$1"
+PAYLOAD_DIR="${PACK_DIR}/payload"
+MANIFEST_FILE="${PACK_DIR}/manifest.txt"
+
+[[ -d "$PACK_DIR" ]] || offline_die "package directory not found: $PACK_DIR"
+
+echo "========================================="
+echo "Offline package info"
+echo "========================================="
+echo "Package directory: $PACK_DIR"
+echo
+
+if [[ -f "$MANIFEST_FILE" ]]; then
+  cat "$MANIFEST_FILE"
+else
+  echo "WARN: manifest not found"
+fi
+
+echo
+echo "Payload files:"
+if [[ -d "$PAYLOAD_DIR" ]]; then
+  find "$PAYLOAD_DIR" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+else
+  echo "WARN: payload directory not found"
+fi

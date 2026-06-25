@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LIB="${XDG_DATA_HOME:-$HOME/.local/share}/offline-pack/offline-pack-lib"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  cat <<EOF
+Usage:
+  offline-restore <offline-pack-dir> [restore-dir]
+EOF
+}
+
+if [[ "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+[[ $# -ge 1 && $# -le 2 ]] || {
+  usage
+  exit 1
+}
+
+offline_require_cmds xz base64 sha256sum tar awk find sort tee mktemp cp
+
+PACK_DIR="$1"
+RESTORE_DIR="${2:-${PACK_DIR}/restored}"
+
+PAYLOAD_DIR="${PACK_DIR}/payload"
+LOGS_DIR="${PACK_DIR}/logs"
+CHECKSUMS_DIR="${PACK_DIR}/checksums"
+MANIFEST_FILE="${PACK_DIR}/manifest.txt"
+
+[[ -d "$PACK_DIR" ]] || offline_die "package directory not found: $PACK_DIR"
+[[ -d "$PAYLOAD_DIR" ]] || offline_die "payload directory not found: $PAYLOAD_DIR"
+[[ -f "$MANIFEST_FILE" ]] || offline_die "manifest not found: $MANIFEST_FILE"
+
+offline_make_dirs "$RESTORE_DIR" "$LOGS_DIR" "$CHECKSUMS_DIR"
+
+LOG_FILE="${LOGS_DIR}/restore.out"
+exec > >(tee "$LOG_FILE") 2>&1
+
+MODE="$(offline_manifest_value "$MANIFEST_FILE" "Mode")"
+PAYLOAD_BASENAME="$(offline_manifest_value "$MANIFEST_FILE" "Payload file")"
+PAYLOAD_FILE="${PAYLOAD_DIR}/${PAYLOAD_BASENAME}"
+
+TMP_DIR="$(mktemp --directory)"
+trap 'rm --recursive --force "$TMP_DIR"' EXIT
+TMP_PAYLOAD="${TMP_DIR}/payload.xz"
+
+echo "[1/5] Reading package"
+echo "Package directory: $PACK_DIR"
+echo "Restore directory: $RESTORE_DIR"
+echo "Mode:              $MODE"
+echo
+
+if [[ -f "$PAYLOAD_FILE" ]]; then
+  echo "[2/5] Using existing compressed payload"
+  cp -- "$PAYLOAD_FILE" "$TMP_PAYLOAD"
+else
+  echo "[2/5] Reconstructing compressed payload from base64 parts"
+  offline_decode_parts_to_file "$PAYLOAD_DIR" "$TMP_PAYLOAD"
+fi
+
+echo "[3/5] Testing xz payload"
+xz --test -- "$TMP_PAYLOAD"
+
+echo "[4/5] Restoring content"
+case "$MODE" in
+  file)
+    xz --decompress --stdout -- "$TMP_PAYLOAD" > "${RESTORE_DIR}/restored-file"
+    ;;
+  archive)
+    tar --extract --xz --file="$TMP_PAYLOAD" --directory="$RESTORE_DIR"
+    ;;
+  *)
+    offline_die "unknown mode in manifest: $MODE"
+    ;;
+esac
+
+echo "[5/5] Writing restored checksums"
+find "$RESTORE_DIR" -type f -print0 \
+  | sort --zero-terminated \
+  | xargs --null sha256sum \
+  > "${CHECKSUMS_DIR}/restored.sha256"
+
+echo
+echo "Offline restore completed"
+echo "Package directory: $PACK_DIR"
+echo "Restore directory: $RESTORE_DIR"
+echo "Log file:          $LOG_FILE"

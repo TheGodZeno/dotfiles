@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PACKAGES=(bash git tmux starship lazygit mise)
+PACKAGES=(bash git tmux starship lazygit mise offline-pack)
 
 need() {
   command -v "$1" >/dev/null 2>&1 || {
