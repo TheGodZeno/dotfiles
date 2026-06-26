@@ -17,7 +17,7 @@ Run bootstrap:
 ./scripts/bootstrap
 ```
 
-The bootstrap script installs common tools for the detected distro, installs mise if needed, prepares tmux TPM, creates local Git config files from the examples if they are missing, and stows the dotfile packages into `$HOME`.
+The bootstrap script installs common tools for the detected distro, installs mise and starship if needed, prepares tmux TPM, creates local Git config files from the examples if they are missing, stows the dotfile packages into `$HOME`, and installs tools from the mise config.
 
 To skip OS package and mise setup while still preparing tmux and stowing files:
 
