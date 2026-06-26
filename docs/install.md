@@ -13,6 +13,8 @@ Run bootstrap:
 ./scripts/bootstrap
 ```
 
+This installs OS packages, installs mise and starship if needed, stows dotfiles, and installs tools from `mise/.config/mise/config.toml`.
+
 Skip OS package and mise setup while still stowing dotfiles and preparing tmux:
 
 ```bash

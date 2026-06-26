@@ -11,6 +11,27 @@ need() {
   }
 }
 
+find_mise() {
+  if command -v mise >/dev/null 2>&1; then
+    command -v mise
+  elif [[ -x "$HOME/.local/bin/mise" ]]; then
+    printf '%s\n' "$HOME/.local/bin/mise"
+  else
+    return 1
+  fi
+}
+
+install_mise_tools() {
+  local mise_bin
+
+  mise_bin="$(find_mise)" || {
+    echo "missing mise command after tool bootstrap" >&2
+    return 1
+  }
+
+  "$mise_bin" install -y
+}
+
 need stow
 
 echo "==> Bootstrapping dotfiles from $ROOT"
@@ -42,5 +63,12 @@ for pkg in "${PACKAGES[@]}"; do
     stow -t "$HOME" "$pkg"
   fi
 done
+
+if [[ "$SKIP_TOOLS" -eq 0 ]]; then
+  echo "==> Installing mise tools"
+  install_mise_tools
+else
+  echo "==> Skipping mise tool install"
+fi
 
 echo "==> Done"

@@ -8,6 +8,7 @@ python = "3.12"
 usage = "latest"
 lazygit = "latest"
 yazi = "latest"
+kustomize = "5.7.1"
 
 [settings]
 experimental = true

@@ -26,8 +26,14 @@ install_mise() {
   fi
 }
 
+install_starship() {
+  if ! has starship; then
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+  fi
+}
+
 case "${1:-}" in
-  --no-packages) install_mise; exit 0 ;;
+  --no-packages) install_mise; install_starship; exit 0 ;;
 esac
 
 if [[ -r /etc/os-release ]]; then
@@ -41,3 +47,4 @@ if [[ -r /etc/os-release ]]; then
 fi
 
 install_mise
+install_starship
