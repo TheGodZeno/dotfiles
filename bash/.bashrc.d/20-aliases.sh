@@ -21,5 +21,14 @@ fi
 
 # OpenShift shortcuts.
 if command -v oc >/dev/null 2>&1; then
-  alias ocas='oc --as system:admin'
+  unalias ocas 2>/dev/null || true
+
+  function ocas {
+    if [[ "${1:-}" == "__complete" ]]; then
+      shift
+      command oc __complete --as=system:admin "$@"
+    else
+      command oc --as system:admin "$@"
+    fi
+  }
 fi
