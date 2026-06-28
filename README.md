@@ -56,7 +56,7 @@ tmux/.config/tmux/tmux.conf  -> ~/.config/tmux/tmux.conf
 git/.gitconfig               -> ~/.gitconfig
 ```
 
-Current bootstrap packages:
+Bootstrap discovers stow packages from top-level directories in the repo, excluding repo metadata, scripts, examples, and docs. Current packages:
 
 ```text
 bash git tmux starship lazygit mise offline-pack

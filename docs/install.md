@@ -39,7 +39,7 @@ Check the setup without installing or changing files:
 ./scripts/doctor
 ```
 
-The default bootstrap stows these packages:
+Bootstrap discovers stow packages from top-level directories in the repo, excluding repo metadata, scripts, examples, and docs. Current packages:
 
 ```text
 bash git tmux starship lazygit mise offline-pack

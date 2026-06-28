@@ -2,7 +2,6 @@
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PACKAGES=(bash git tmux starship lazygit mise offline-pack)
 REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg fd bat jq shellcheck shfmt tar xz base64 sha256sum split realpath numfmt stat awk find sort wc tee date du dirname basename mktemp cp xargs)
 FAILED=0
 
@@ -21,6 +20,15 @@ fail() {
 
 has() {
   command -v "$1" >/dev/null 2>&1
+}
+
+stow_packages() {
+  find "$ROOT" -mindepth 1 -maxdepth 1 -type d \
+    ! -name '.*' \
+    ! -name docs \
+    ! -name examples \
+    ! -name scripts \
+    -printf '%f\n' | sort
 }
 
 check_command() {
@@ -64,12 +72,18 @@ check_stow_package() {
   target="$(mktemp -d)"
 
   if stow -n -t "$target" "$package" >/dev/null 2>&1; then
-    pass "stow simulation: $package"
+    pass "stow package layout: $package"
   else
-    fail "stow simulation failed: $package"
+    fail "stow package layout failed: $package"
   fi
 
   rm -rf "$target"
+
+  if stow -n -t "$HOME" "$package" >/dev/null 2>&1; then
+    pass "stow home dry-run: $package"
+  else
+    fail "stow home dry-run failed: $package"
+  fi
 }
 
 echo "==> Dotfiles doctor"
@@ -99,13 +113,9 @@ echo
 echo "==> Stow packages"
 if has stow; then
   cd "$ROOT" || exit 1
-  for package in "${PACKAGES[@]}"; do
-    if [[ -d "$package" ]]; then
-      check_stow_package "$package"
-    else
-      warn "package directory missing: $package"
-    fi
-  done
+  while IFS= read -r package; do
+    check_stow_package "$package"
+  done < <(stow_packages)
 else
   fail "cannot run stow simulations without stow"
 fi
