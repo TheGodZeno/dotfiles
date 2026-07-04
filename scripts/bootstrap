@@ -2,7 +2,15 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PACKAGES=(bash git tmux starship lazygit mise offline-pack)
+
+stow_packages() {
+  find "$ROOT" -mindepth 1 -maxdepth 1 -type d \
+    ! -name '.*' \
+    ! -name docs \
+    ! -name examples \
+    ! -name scripts \
+    -printf '%f\n' | sort
+}
 
 need() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -57,12 +65,10 @@ echo "==> Preparing Git config"
 
 cd "$ROOT"
 echo "==> Stowing packages into $HOME"
-for pkg in "${PACKAGES[@]}"; do
-  if [[ -d "$pkg" ]]; then
-    echo "stowing $pkg"
-    stow -t "$HOME" "$pkg"
-  fi
-done
+while IFS= read -r pkg; do
+  echo "stowing $pkg"
+  stow -t "$HOME" "$pkg"
+done < <(stow_packages)
 
 if [[ "$SKIP_TOOLS" -eq 0 ]]; then
   echo "==> Installing mise tools"

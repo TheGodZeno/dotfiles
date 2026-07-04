@@ -5,7 +5,7 @@ has() { command -v "$1" >/dev/null 2>&1; }
 
 install_fedora() {
   sudo dnf install -y \
-    git stow curl wget unzip tar xz \
+    git stow curl unzip tar xz \
     bash-completion ca-certificates openssh-clients \
     eza fd-find ripgrep fzf bat jq yq git-delta shellcheck shfmt \
     tmux direnv zoxide neovim
@@ -14,7 +14,7 @@ install_fedora() {
 install_ubuntu() {
   sudo apt-get update
   sudo apt-get install -y \
-    git stow curl wget unzip tar xz-utils \
+    git stow curl unzip tar xz-utils \
     bash-completion ca-certificates openssh-client \
     eza fd-find ripgrep fzf bat jq git-delta shellcheck shfmt \
     tmux direnv zoxide neovim
