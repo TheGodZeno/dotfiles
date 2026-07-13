@@ -9,10 +9,10 @@ ssh/
 **/config
 *.pem
 
-# Work-specific git config
-.gitconfig-work
-.gitconfig.local
-.gitconfig.work
+# Machine-local Git identity config
+git/.gitconfig.local
+git/.gitconfig.work
+git/.gitconfig-work
 
 # Runtime output
 offline-pack/.local/state/

@@ -9,6 +9,10 @@ usage = "latest"
 lazygit = "latest"
 yazi = "latest"
 kustomize = "5.7.1"
+yq = "latest"
+grpcurl = "latest"
+gum = "latest"
+oc = { version = "4.20.15", bin = "oc", checksum_url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/sha256sum.txt", platforms = { linux-arm64 = { url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/openshift-client-linux-arm64-{{ version }}.tar.gz" }, linux-x64 = { url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/openshift-client-linux-{{ version }}.tar.gz" }, macos-arm64 = { url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/openshift-client-mac-arm64-{{ version }}.tar.gz" }, macos-x64 = { url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/openshift-client-mac-{{ version }}.tar.gz" }, windows-x64 = { url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ version }}/openshift-client-windows-{{ version }}.zip" } }, version_expr = "sortVersions(versions)", version_list_url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/", version_regex = 'href="(\d+\.\d+\.\d+)/"' }
 
 [settings]
 experimental = true

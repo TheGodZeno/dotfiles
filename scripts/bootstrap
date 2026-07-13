@@ -40,6 +40,22 @@ install_mise_tools() {
   "$mise_bin" install -y
 }
 
+prepare_starship_theme() {
+  local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+  local current="${config_home}/starship/current.toml"
+  local default="${config_home}/starship/default.toml"
+
+  if [[ -e "$current" || -L "$current" ]]; then
+    echo "keeping starship theme: $(basename -- "$(readlink -- "$current" 2>/dev/null || printf custom)")"
+    return
+  fi
+
+  if [[ -f "$default" ]]; then
+    ln -s "$(basename -- "$default")" "$current"
+    echo "starship theme: default"
+  fi
+}
+
 need stow
 
 echo "==> Bootstrapping dotfiles from $ROOT"
@@ -67,8 +83,11 @@ cd "$ROOT"
 echo "==> Stowing packages into $HOME"
 while IFS= read -r pkg; do
   echo "stowing $pkg"
-  stow -t "$HOME" "$pkg"
+  stow --restow -t "$HOME" "$pkg"
 done < <(stow_packages)
+
+echo "==> Preparing Starship theme"
+prepare_starship_theme
 
 if [[ "$SKIP_TOOLS" -eq 0 ]]; then
   echo "==> Installing mise tools"

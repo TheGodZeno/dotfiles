@@ -1,46 +1,43 @@
 # Install
 
-Clone the repo:
-
 ```bash
 git clone git@github.com:TheGodZeno/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-```
-
-Run bootstrap:
-
-```bash
 ./scripts/bootstrap
 ```
 
-This installs OS packages, installs mise and starship if needed, stows dotfiles, and installs tools from `mise/.config/mise/config.toml`.
-
-Skip OS package and mise setup while still stowing dotfiles and preparing tmux:
-
-```bash
-./scripts/bootstrap --no-tools
-```
-
-Only install mise and skip OS packages:
-
-```bash
-./scripts/bootstrap-tools --no-packages
-```
-
-Only prepare local Git config examples:
-
-```bash
-./scripts/bootstrap-git
-```
-
-Check the setup without installing or changing files:
-
-```bash
-./scripts/doctor
-```
-
-Bootstrap discovers stow packages from top-level directories in the repo, excluding repo metadata, scripts, examples, and docs. Current packages:
+What bootstrap does:
 
 ```text
-bash git tmux starship lazygit mise offline-pack
+install OS packages
+install mise and starship if missing
+prepare tmux TPM
+prepare local Git config files
+stow dotfiles into $HOME
+select default Starship theme
+run mise install
+```
+
+Useful commands:
+
+```bash
+./scripts/bootstrap --no-tools     # relink dotfiles only
+./scripts/bootstrap-tools          # install system tools + mise/starship
+./scripts/bootstrap-git            # create local Git identity files
+./scripts/doctor                   # check setup
+```
+
+mise wrappers from repo root:
+
+```bash
+mise run bootstrap
+mise run bootstrap:no-tools
+mise run doctor
+mise run tools:install
+```
+
+After bootstrap, `~/.local/bin/starship-theme` should exist. If only the theme command is missing, relink the Starship package:
+
+```bash
+stow -R -t "$HOME" starship
 ```

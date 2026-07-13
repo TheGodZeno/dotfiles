@@ -15,6 +15,12 @@ Stow one package:
 stow -t "$HOME" bash
 ```
 
+Relink one package:
+
+```bash
+stow -R -t "$HOME" starship
+```
+
 Stow all common packages:
 
 ```bash

@@ -1,0 +1,31 @@
+# This file is only for commands you run inside this dotfiles repo.
+# The tools/packages installed by mise live in:
+#   mise/.config/mise/config.toml -> ~/.config/mise/config.toml
+#
+# Think of this like a small Taskfile/Makefile replacement:
+#   mise run bootstrap
+#   mise run doctor
+
+[tasks.bootstrap]
+description = "Bootstrap this dotfiles repo"
+run = "./scripts/bootstrap"
+
+[tasks."bootstrap:no-tools"]
+description = "Stow dotfiles and local setup without installing tools"
+run = "./scripts/bootstrap --no-tools"
+
+[tasks.doctor]
+description = "Check local dotfiles setup"
+run = "./scripts/doctor"
+
+[tasks."tools:install"]
+description = "Install tools from the global mise config"
+run = "mise install -y"
+
+[tasks."starship:list"]
+description = "List Starship themes"
+run = "starship-theme list"
+
+[tasks."starship:current"]
+description = "Show active Starship theme"
+run = "starship-theme current"
