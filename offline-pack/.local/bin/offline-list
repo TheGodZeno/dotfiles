@@ -6,7 +6,7 @@ LIB="${XDG_DATA_HOME:-$HOME/.local/share}/offline-pack/offline-pack-lib"
 source "$LIB"
 
 usage() {
-  echo "Usage: offline-list <offline-pack-dir>"
+  echo "Usage: offline-list <offline-pack-dir-or-tar.xz>"
 }
 
 if [[ "${1:-}" == "--help" ]]; then
@@ -19,17 +19,21 @@ fi
   exit 1
 }
 
-offline_require_cmds find sort
+offline_require_cmds find sort tar mktemp head
 
-PACK_DIR="$1"
+PACK_INPUT="$1"
+TMP_DIR="$(mktemp --directory)"
+trap 'rm --recursive --force "$TMP_DIR"' EXIT
+
+PACK_DIR="$(offline_resolve_pack_dir "$PACK_INPUT" "$TMP_DIR")"
+
 PAYLOAD_DIR="${PACK_DIR}/payload"
 MANIFEST_FILE="${PACK_DIR}/manifest.txt"
-
-[[ -d "$PACK_DIR" ]] || offline_die "package directory not found: $PACK_DIR"
 
 echo "========================================="
 echo "Offline package info"
 echo "========================================="
+echo "Package input:     $PACK_INPUT"
 echo "Package directory: $PACK_DIR"
 echo
 

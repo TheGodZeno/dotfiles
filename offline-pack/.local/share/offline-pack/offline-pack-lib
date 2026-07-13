@@ -59,6 +59,92 @@ offline_latest_pack() {
     | tail --lines=1
 }
 
+offline_resolve_pack_dir() {
+  local pack_input="$1"
+  local tmp_dir="$2"
+  local pack_dir
+
+  # Commands accept either the unpacked package directory or the full bundle.
+  # Bundles are extracted to the caller-owned temporary directory.
+  if [[ -d "$pack_input" ]]; then
+    printf '%s\n' "$pack_input"
+  elif [[ -f "$pack_input" ]]; then
+    tar --extract --xz --file="$pack_input" --directory="$tmp_dir"
+    pack_dir="$(find "$tmp_dir" -mindepth 1 -maxdepth 1 -type d | sort | head --lines=1)"
+    [[ -n "$pack_dir" ]] || offline_die "bundle archive did not contain a package directory: $pack_input"
+    printf '%s\n' "$pack_dir"
+  else
+    offline_die "package not found: $pack_input"
+  fi
+}
+
+offline_pack_is_bundle() {
+  local pack_input="$1"
+
+  [[ -f "$pack_input" && ! -d "$pack_input" ]]
+}
+
+offline_require_pack_layout() {
+  local pack_dir="$1"
+  local payload_dir="${pack_dir}/payload"
+  local manifest_file="${pack_dir}/manifest.txt"
+
+  [[ -d "$payload_dir" ]] || offline_die "payload directory not found: $payload_dir"
+  [[ -f "$manifest_file" ]] || offline_die "manifest not found: $manifest_file"
+}
+
+offline_pack_payload_file() {
+  local pack_dir="$1"
+  local manifest_file="${pack_dir}/manifest.txt"
+  local payload_dir="${pack_dir}/payload"
+  local payload_basename
+
+  payload_basename="$(offline_manifest_value "$manifest_file" "Payload file")"
+  [[ -n "$payload_basename" ]] || offline_die "payload file missing from manifest: $manifest_file"
+  printf '%s/%s\n' "$payload_dir" "$payload_basename"
+}
+
+offline_copy_or_decode_payload() {
+  local pack_dir="$1"
+  local output_file="$2"
+  local payload_dir="${pack_dir}/payload"
+  local payload_file
+
+  payload_file="$(offline_pack_payload_file "$pack_dir")" || return 1
+
+  # Prefer the kept xz payload when present. If --no-keep-xz was used, rebuild
+  # the same payload from the transfer-safe base64 parts.
+  if [[ -f "$payload_file" ]]; then
+    cp -- "$payload_file" "$output_file"
+  else
+    offline_decode_parts_to_file "$payload_dir" "$output_file"
+  fi
+}
+
+offline_verify_part_checksums() {
+  local pack_dir="$1"
+  local parts_sha="${pack_dir}/checksums/parts.sha256"
+
+  if [[ -f "$parts_sha" ]]; then
+    (
+      cd "$pack_dir" || return 1
+      sha256sum --check "checksums/parts.sha256"
+    )
+  else
+    echo "WARN: parts.sha256 not found"
+  fi
+}
+
+offline_write_tree_checksums() {
+  local root_dir="$1"
+  local output_file="$2"
+
+  find "$root_dir" -type f -print0 \
+    | sort --zero-terminated \
+    | xargs --null sha256sum \
+    > "$output_file"
+}
+
 offline_decode_parts_to_file() {
   local payload_dir="$1"
   local output_file="$2"

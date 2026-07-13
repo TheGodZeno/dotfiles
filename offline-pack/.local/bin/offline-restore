@@ -8,7 +8,7 @@ source "$LIB"
 usage() {
   cat <<EOF
 Usage:
-  offline-restore <offline-pack-dir> [restore-dir]
+  offline-restore <offline-pack-dir-or-tar.xz> [restore-dir]
 EOF
 }
 
@@ -22,34 +22,47 @@ fi
   exit 1
 }
 
-offline_require_cmds xz base64 sha256sum tar awk find sort tee mktemp cp
+offline_require_cmds xz base64 sha256sum tar awk find sort tee mktemp cp basename xargs
 
-PACK_DIR="$1"
-RESTORE_DIR="${2:-${PACK_DIR}/restored}"
+PACK_INPUT="$1"
 
-PAYLOAD_DIR="${PACK_DIR}/payload"
+# A .tar.xz bundle is extracted into TMP_DIR and treated exactly like a package
+# directory. Direct package directories pass through unchanged.
+TMP_DIR="$(mktemp --directory)"
+trap 'rm --recursive --force "$TMP_DIR"' EXIT
+
+PACK_DIR="$(offline_resolve_pack_dir "$PACK_INPUT" "$TMP_DIR")"
+offline_require_pack_layout "$PACK_DIR"
+
+# If restoring from a bundle and no output path is given, avoid restoring into
+# the temporary extraction directory that will be deleted on exit.
+if [[ $# -eq 2 ]]; then
+  RESTORE_DIR="$2"
+elif offline_pack_is_bundle "$PACK_INPUT"; then
+  RESTORE_DIR="${PWD}/$(basename -- "${PACK_INPUT%.tar.xz}")-restored"
+else
+  RESTORE_DIR="${PACK_DIR}/restored"
+fi
+
 LOGS_DIR="${PACK_DIR}/logs"
 CHECKSUMS_DIR="${PACK_DIR}/checksums"
 MANIFEST_FILE="${PACK_DIR}/manifest.txt"
 
-[[ -d "$PACK_DIR" ]] || offline_die "package directory not found: $PACK_DIR"
-[[ -d "$PAYLOAD_DIR" ]] || offline_die "payload directory not found: $PAYLOAD_DIR"
-[[ -f "$MANIFEST_FILE" ]] || offline_die "manifest not found: $MANIFEST_FILE"
-
 offline_make_dirs "$RESTORE_DIR" "$LOGS_DIR" "$CHECKSUMS_DIR"
 
+# From here on, stdout/stderr are written both to the terminal and restore log.
 LOG_FILE="${LOGS_DIR}/restore.out"
 exec > >(tee "$LOG_FILE") 2>&1
 
+# Mode tells restore whether the xz payload expands to one file or to a tar
+# archive containing the original directory structure.
 MODE="$(offline_manifest_value "$MANIFEST_FILE" "Mode")"
-PAYLOAD_BASENAME="$(offline_manifest_value "$MANIFEST_FILE" "Payload file")"
-PAYLOAD_FILE="${PAYLOAD_DIR}/${PAYLOAD_BASENAME}"
+PAYLOAD_FILE="$(offline_pack_payload_file "$PACK_DIR")"
 
-TMP_DIR="$(mktemp --directory)"
-trap 'rm --recursive --force "$TMP_DIR"' EXIT
 TMP_PAYLOAD="${TMP_DIR}/payload.xz"
 
 echo "[1/5] Reading package"
+echo "Package input:     $PACK_INPUT"
 echo "Package directory: $PACK_DIR"
 echo "Restore directory: $RESTORE_DIR"
 echo "Mode:              $MODE"
@@ -57,21 +70,23 @@ echo
 
 if [[ -f "$PAYLOAD_FILE" ]]; then
   echo "[2/5] Using existing compressed payload"
-  cp -- "$PAYLOAD_FILE" "$TMP_PAYLOAD"
 else
   echo "[2/5] Reconstructing compressed payload from base64 parts"
-  offline_decode_parts_to_file "$PAYLOAD_DIR" "$TMP_PAYLOAD"
 fi
+offline_copy_or_decode_payload "$PACK_DIR" "$TMP_PAYLOAD"
 
+# Test before writing user-visible restored files.
 echo "[3/5] Testing xz payload"
 xz --test -- "$TMP_PAYLOAD"
 
 echo "[4/5] Restoring content"
 case "$MODE" in
   file)
+    # File mode has no original filename in the payload, so use a stable name.
     xz --decompress --stdout -- "$TMP_PAYLOAD" > "${RESTORE_DIR}/restored-file"
     ;;
   archive)
+    # Archive mode preserves the original paths from the tar stream.
     tar --extract --xz --file="$TMP_PAYLOAD" --directory="$RESTORE_DIR"
     ;;
   *)
@@ -79,11 +94,9 @@ case "$MODE" in
     ;;
 esac
 
+# This is useful for comparing restored output with another copy later.
 echo "[5/5] Writing restored checksums"
-find "$RESTORE_DIR" -type f -print0 \
-  | sort --zero-terminated \
-  | xargs --null sha256sum \
-  > "${CHECKSUMS_DIR}/restored.sha256"
+offline_write_tree_checksums "$RESTORE_DIR" "${CHECKSUMS_DIR}/restored.sha256"
 
 echo
 echo "Offline restore completed"
