@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+THEME_DIR="${CONFIG_HOME}/starship"
+ACTIVE_CONFIG="${THEME_DIR}/current.toml"
+
+usage() {
+  cat <<EOF
+Usage:
+  starship-theme list
+  starship-theme current
+  starship-theme switch <name>
+EOF
+}
+
+theme_path() {
+  local name="$1"
+  name="${name%.toml}"
+
+  printf '%s/%s.toml\n' "$THEME_DIR" "$name"
+}
+
+list_themes() {
+  (
+    cd "$THEME_DIR" || exit 1
+
+    if command -v fd >/dev/null 2>&1; then
+      fd --max-depth 1 --type f --extension toml --exclude current.toml . .
+    else
+      find . -maxdepth 1 -type f -name '*.toml' ! -name 'current.toml' -printf '%f\n'
+    fi
+  ) | sed 's#^\./##; s/\.toml$//' | sort
+}
+
+case "${1:-}" in
+  list)
+    [[ -d "$THEME_DIR" ]] || {
+      echo "starship theme directory not found: $THEME_DIR" >&2
+      exit 1
+    }
+
+    list_themes
+    ;;
+  current)
+    if [[ -L "$ACTIVE_CONFIG" ]]; then
+      basename -- "$(readlink -- "$ACTIVE_CONFIG")" .toml
+    elif [[ -e "$ACTIVE_CONFIG" ]]; then
+      echo "custom"
+    else
+      echo "none"
+    fi
+    ;;
+  switch)
+    name="${2:-}"
+    [[ -n "$name" ]] || {
+      usage
+      exit 1
+    }
+    name="${name%.toml}"
+
+    src="$(theme_path "$name")"
+    [[ -f "$src" ]] || {
+      echo "starship theme not found: $name" >&2
+      echo "Available themes:" >&2
+      "$0" list >&2
+      exit 1
+    }
+
+    if [[ "$(dirname -- "$src")" == "$(dirname -- "$ACTIVE_CONFIG")" ]]; then
+      ln -sfn "$(basename -- "$src")" "$ACTIVE_CONFIG"
+    else
+      ln -sfn "$src" "$ACTIVE_CONFIG"
+    fi
+
+    echo "starship theme: $name"
+    ;;
+  --help|-h|"")
+    usage
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
