@@ -2,7 +2,7 @@
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg fd bat jq shellcheck shfmt tar xz base64 sha256sum split realpath numfmt stat awk find sort wc tee date du dirname basename mktemp cp xargs)
+REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg fd bat jq shellcheck shfmt)
 FAILED=0
 
 pass() {

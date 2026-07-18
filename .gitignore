@@ -13,6 +13,3 @@ ssh/
 git/.gitconfig.local
 git/.gitconfig.work
 git/.gitconfig-work
-
-# Runtime output
-offline-pack/.local/state/

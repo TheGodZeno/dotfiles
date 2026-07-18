@@ -30,7 +30,6 @@ tmux/          tmux config
 starship/      prompt config and themes
 mise/          global mise tools config
 lazygit/       lazygit config
-offline-pack/  local helper tool
 scripts/       bootstrap and checks
 docs/          details and notes
 ```
@@ -51,7 +50,6 @@ SSH keys and secrets
 - [Install](docs/install.md)
 - [Tools and mise](docs/tools.md)
 - [Stow](docs/stow.md)
-- [Offline Pack](docs/offline-pack.md)
 - [SSH](docs/ssh.md)
 - [Git cheatsheet](docs/cheatsheets/git.md)
 - [Certificates cheatsheet](docs/cheatsheets/certs.md)
