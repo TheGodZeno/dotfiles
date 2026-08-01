@@ -17,6 +17,16 @@ git stow curl tar xz tmux direnv zoxide neovim
 fzf eza fd ripgrep bat jq yq git-delta shellcheck shfmt
 ```
 
+## Shell Integrations
+
+`bash/.bashrc.d/50-tools.sh` configures:
+
+```text
+bat       default theme/style/pager, plus b and catp aliases
+fzf       fd-backed file search, Ctrl-T preview with bat, Alt-C directory search
+fd/bat    fdfind and batcat fallbacks on Debian-style systems
+```
+
 ## mise Tools
 
 Listed in:

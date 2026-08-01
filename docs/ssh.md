@@ -14,6 +14,15 @@ Generate a work key:
 ssh-keygen -t ed25519 -C "work-email@example.com" -f ~/.ssh/id_ed25519_work
 ```
 
+Or use the shell helper:
+
+```bash
+git_ssh_key your-email@example.com home
+git_ssh_key work-email@example.com work
+```
+
+If you omit the email, `git_ssh_key` uses `git config --global user.email`.
+
 Start agent and add key:
 
 ```bash

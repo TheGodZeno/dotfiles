@@ -2,7 +2,7 @@
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg fd bat jq shellcheck shfmt)
+REQUIRED_COMMANDS=(git stow tmux mise starship lazygit delta fzf rg jq shellcheck shfmt)
 FAILED=0
 
 pass() {
@@ -39,6 +39,21 @@ check_command() {
   else
     fail "missing command: $cmd"
   fi
+}
+
+check_command_any() {
+  local label="$1"
+  shift
+
+  local cmd
+  for cmd in "$@"; do
+    if has "$cmd"; then
+      pass "command: $label ($cmd)"
+      return
+    fi
+  done
+
+  fail "missing command: $label ($*)"
 }
 
 check_file() {
@@ -94,6 +109,8 @@ echo "==> Commands"
 for cmd in "${REQUIRED_COMMANDS[@]}"; do
   check_command "$cmd"
 done
+check_command_any "fd" fd fdfind
+check_command_any "bat" bat batcat
 echo
 
 echo "==> Git config"
