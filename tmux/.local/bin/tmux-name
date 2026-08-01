@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+action="${1:-}"
+
+case "$action" in
+  new-window)
+    title="New window"
+    prompt="Window name"
+    default=""
+    ;;
+  new-session)
+    title="New session"
+    prompt="Session name"
+    default=""
+    ;;
+  rename-window)
+    title="Rename window"
+    prompt="Window name"
+    default="$(tmux display-message -p '#W')"
+    ;;
+  rename-session)
+    title="Rename session"
+    prompt="Session name"
+    default="$(tmux display-message -p '#S')"
+    ;;
+  *)
+    echo "usage: tmux-name new-window|new-session|rename-window|rename-session" >&2
+    exit 2
+    ;;
+esac
+
+clear
+printf '\n  %s\n\n' "$title"
+
+name=""
+if [[ -n "$default" ]]; then
+  read -r -e -i "$default" -p "  ${prompt}: " name
+else
+  read -r -e -p "  ${prompt}: " name
+fi
+
+[[ -n "$name" ]] || exit 0
+
+case "$action" in
+  new-window)
+    tmux new-window -n "$name"
+    ;;
+  new-session)
+    tmux new-session -d -s "$name"
+    tmux switch-client -t "$name"
+    ;;
+  rename-window)
+    tmux rename-window "$name"
+    ;;
+  rename-session)
+    tmux rename-session "$name"
+    ;;
+esac

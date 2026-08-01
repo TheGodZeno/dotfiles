@@ -50,6 +50,7 @@ SSH keys and secrets
 - [Install](docs/install.md)
 - [Tools and mise](docs/tools.md)
 - [Stow](docs/stow.md)
+- [tmux](docs/tmux.md)
 - [SSH](docs/ssh.md)
 - [Git cheatsheet](docs/cheatsheets/git.md)
 - [Certificates cheatsheet](docs/cheatsheets/certs.md)
