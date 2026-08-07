@@ -35,6 +35,8 @@ Listed in:
 mise/.config/mise/config.toml
 ```
 
+The `mise` Stow package also links `~/.local/bin/kubectl-krew`, a small wrapper that lets `kubectl krew ...` call the mise-installed `krew` binary.
+
 Installed with:
 
 ```bash

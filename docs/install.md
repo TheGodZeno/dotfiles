@@ -36,8 +36,14 @@ mise run doctor
 mise run tools:install
 ```
 
-After bootstrap, `~/.local/bin/starship-theme` should exist. If only the theme command is missing, relink the Starship package:
+After bootstrap, helper commands such as `~/.local/bin/starship-theme` and `~/.local/bin/kubectl-krew` should exist. If only the theme command is missing, relink the Starship package:
 
 ```bash
 stow -R -t "$HOME" starship
+```
+
+If only the `kubectl-krew` wrapper is missing, relink the mise package:
+
+```bash
+stow -R -t "$HOME" mise
 ```
