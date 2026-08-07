@@ -16,6 +16,8 @@ glow = "latest"
 gum = "latest"
 argocd = "3.1.12"
 pipx = "latest"
+watchexec = "latest"
+krew = "latest"
 
 [settings]
 experimental = true
