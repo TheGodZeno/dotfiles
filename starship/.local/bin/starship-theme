@@ -68,9 +68,9 @@ case "${1:-}" in
     }
 
     if [[ "$(dirname -- "$src")" == "$(dirname -- "$ACTIVE_CONFIG")" ]]; then
-      ln -sfn "$(basename -- "$src")" "$ACTIVE_CONFIG"
+      ln --symbolic --force --no-dereference "$(basename -- "$src")" "$ACTIVE_CONFIG"
     else
-      ln -sfn "$src" "$ACTIVE_CONFIG"
+      ln --symbolic --force --no-dereference "$src" "$ACTIVE_CONFIG"
     fi
 
     echo "starship theme: $name"

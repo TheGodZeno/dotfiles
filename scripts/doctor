@@ -9,6 +9,10 @@ pass() {
   printf 'ok   %s\n' "$1"
 }
 
+info() {
+  printf 'info %s\n' "$1"
+}
+
 warn() {
   printf 'warn %s\n' "$1"
 }
@@ -33,9 +37,11 @@ stow_packages() {
 
 check_command() {
   local cmd="$1"
+  local path
 
   if has "$cmd"; then
-    pass "command: $cmd"
+    path="$(command -v "$cmd")"
+    pass "command: $cmd ($path)"
   else
     fail "missing command: $cmd"
   fi
@@ -48,7 +54,7 @@ check_command_any() {
   local cmd
   for cmd in "$@"; do
     if has "$cmd"; then
-      pass "command: $label ($cmd)"
+      pass "command: $label ($cmd: $(command -v "$cmd"))"
       return
     fi
   done
@@ -60,7 +66,7 @@ check_file() {
   local path="$1"
 
   if [[ -e "$path" ]]; then
-    pass "file: ${path#"$ROOT"/}"
+    pass "file: ${path#"$ROOT"/} ($path)"
   else
     fail "missing file: ${path#"$ROOT"/}"
   fi
@@ -73,7 +79,7 @@ check_git_placeholders() {
     return
   fi
 
-  if grep -Eq 'YOUR_(NAME|PERSONAL_EMAIL|WORK_NAME|WORK_EMAIL)' "$path"; then
+  if grep --extended-regexp --quiet 'YOUR_(NAME|PERSONAL_EMAIL|WORK_NAME|WORK_EMAIL)' "$path"; then
     warn "edit placeholder values in ${path#"$ROOT"/}"
   else
     pass "no placeholders in ${path#"$ROOT"/}"
@@ -83,21 +89,26 @@ check_git_placeholders() {
 check_stow_package() {
   local package="$1"
   local target
+  local output
 
-  target="$(mktemp -d)"
+  target="$(mktemp --directory)"
+  info "checking Stow package layout: $package -> $target"
 
-  if stow -n -t "$target" "$package" >/dev/null 2>&1; then
+  if output="$(stow --simulate --verbose --target "$target" "$package" 2>&1)"; then
     pass "stow package layout: $package"
   else
     fail "stow package layout failed: $package"
+    printf '%s\n' "$output"
   fi
 
-  rm -rf "$target"
+  rm --recursive --force "$target"
 
-  if stow -n -t "$HOME" "$package" >/dev/null 2>&1; then
+  info "checking Stow home dry-run: $package -> $HOME"
+  if output="$(stow --simulate --verbose --target "$HOME" "$package" 2>&1)"; then
     pass "stow home dry-run: $package"
   else
     fail "stow home dry-run failed: $package"
+    printf '%s\n' "$output"
   fi
 }
 

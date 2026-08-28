@@ -3,6 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+info() {
+  printf '  -> %s\n' "$1"
+}
+
+warn() {
+  printf '  !! %s\n' "$1"
+}
+
 stow_packages() {
   find "$ROOT" -mindepth 1 -maxdepth 1 -type d \
     ! -name '.*' \
@@ -17,6 +25,69 @@ need() {
     echo "missing required command: $1" >&2
     return 1
   }
+}
+
+prompt_yes_no() {
+  local prompt="$1"
+  local reply
+
+  if [[ ! -t 0 || ! -r /dev/tty ]]; then
+    warn "not running interactively; skipping prompt"
+    return 1
+  fi
+
+  while true; do
+    read -r -p "$prompt [y/N] " reply </dev/tty
+    case "$reply" in
+      [Yy]|[Yy][Ee][Ss]) return 0 ;;
+      ""|[Nn]|[Nn][Oo]) return 1 ;;
+      *) echo "please answer y or n" ;;
+    esac
+  done
+}
+
+show_stow_conflict_diffs() {
+  local package="$1"
+  local package_root="$ROOT/$package"
+  local rel
+  local src
+  local dest
+  local shown=0
+
+  echo "conflict details for $package:"
+
+  while IFS= read -r rel; do
+    src="$package_root/$rel"
+    dest="$HOME/$rel"
+
+    [[ -e "$dest" || -L "$dest" ]] || continue
+
+    if [[ -L "$dest" ]]; then
+      local link_target
+      link_target="$(readlink -- "$dest" 2>/dev/null || true)"
+
+      if [[ "$link_target" == "$src" || "$link_target" == "$package/$rel" ]]; then
+        continue
+      fi
+
+      echo "--- $dest is a symlink to $link_target"
+      shown=1
+      continue
+    fi
+
+    if [[ -f "$src" && -f "$dest" ]]; then
+      echo "--- diff: $dest"
+      diff --unified --label "repo:$package/$rel" --label "home:$rel" "$src" "$dest" || true
+      shown=1
+    else
+      echo "--- $dest exists and is not directly comparable with $src"
+      shown=1
+    fi
+  done < <(find "$package_root" \( -type f -o -type l \) -printf '%P\n' | sort)
+
+  if [[ "$shown" -eq 0 ]]; then
+    echo "no directly comparable existing files found; see Stow output above"
+  fi
 }
 
 find_mise() {
@@ -37,7 +108,8 @@ install_mise_tools() {
     return 1
   }
 
-  "$mise_bin" install -y
+  info "using mise: $mise_bin"
+  "$mise_bin" install --yes
 }
 
 prepare_starship_theme() {
@@ -45,26 +117,58 @@ prepare_starship_theme() {
   local current="${config_home}/starship/current.toml"
   local default="${config_home}/starship/default.toml"
 
+  info "theme directory: ${config_home}/starship"
+
   if [[ -e "$current" || -L "$current" ]]; then
     echo "keeping starship theme: $(basename -- "$(readlink -- "$current" 2>/dev/null || printf custom)")"
     return
   fi
 
   if [[ -f "$default" ]]; then
-    ln -s "$(basename -- "$default")" "$current"
+    info "creating $current -> $(basename -- "$default")"
+    ln --symbolic "$(basename -- "$default")" "$current"
     echo "starship theme: default"
+  else
+    warn "default Starship theme not found at $default"
+  fi
+}
+
+stow_package() {
+  local package="$1"
+  local dry_run_output
+
+  info "checking package with Stow dry-run"
+  if dry_run_output="$(stow --simulate --verbose --restow --target "$HOME" "$package" 2>&1)"; then
+    info "dry-run clean; applying links"
+    stow --restow --target "$HOME" "$package"
+    info "stowed $package"
+    return
+  fi
+
+  warn "Stow reported a conflict for $package"
+  echo "$dry_run_output" >&2
+  show_stow_conflict_diffs "$package"
+
+  if prompt_yes_no "Adopt existing files for '$package' into this repo and stow it?"; then
+    info "adopting existing files for $package"
+    stow --adopt --restow --target "$HOME" "$package"
+    echo "adopted $package; review changes with: git diff -- $package"
+  else
+    echo "skipping $package"
   fi
 }
 
 need stow
 
 echo "==> Bootstrapping dotfiles from $ROOT"
+info "home target: $HOME"
 
 if [[ "${1:-}" == "--no-tools" ]]; then
   SKIP_TOOLS=1
 else
   SKIP_TOOLS=0
 fi
+info "skip tool install: $SKIP_TOOLS"
 
 if [[ "$SKIP_TOOLS" -eq 0 ]]; then
   echo "==> Installing system tools and mise"
@@ -81,9 +185,10 @@ echo "==> Preparing Git config"
 
 cd "$ROOT"
 echo "==> Stowing packages into $HOME"
+info "packages: $(stow_packages | tr '\n' ' ')"
 while IFS= read -r pkg; do
-  echo "stowing $pkg"
-  stow --restow -t "$HOME" "$pkg"
+  echo "--> stowing $pkg"
+  stow_package "$pkg"
 done < <(stow_packages)
 
 echo "==> Preparing Starship theme"

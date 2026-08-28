@@ -20,7 +20,7 @@ run = "./scripts/doctor"
 
 [tasks."tools:install"]
 description = "Install tools from the global mise config"
-run = "mise install -y"
+run = "mise install --yes"
 
 [tasks."starship:list"]
 description = "List Starship themes"

@@ -4,12 +4,22 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NEEDS_EDIT=0
 
+info() {
+  printf '  -> %s\n' "$1"
+}
+
+warn() {
+  printf '  !! %s\n' "$1"
+}
+
 seed_file() {
   local src="$1"
   local dst="$2"
 
+  info "checking ${dst#"$ROOT"/}"
+
   if [[ ! -e "$dst" && ! -r "$src" ]]; then
-    echo "missing template: ${src#"$ROOT"/}" >&2
+    warn "missing template: ${src#"$ROOT"/}"
     return 1
   fi
 
@@ -25,19 +35,27 @@ seed_file() {
 echo "==> Checking local Git config files"
 
 if [[ -e "$ROOT/git/.gitconfig-work" && ! -e "$ROOT/git/.gitconfig.work" ]]; then
-  echo "renaming git/.gitconfig-work to git/.gitconfig.work"
+  info "renaming git/.gitconfig-work to git/.gitconfig.work"
   mv "$ROOT/git/.gitconfig-work" "$ROOT/git/.gitconfig.work"
+else
+  info "legacy git/.gitconfig-work rename not needed"
 fi
 
 seed_file "$ROOT/examples/gitconfig.local.example" "$ROOT/git/.gitconfig.local"
 seed_file "$ROOT/examples/gitconfig.work.example" "$ROOT/git/.gitconfig.work"
 
-if grep -Eq 'YOUR_(NAME|PERSONAL_EMAIL)' "$ROOT/git/.gitconfig.local"; then
+if grep --extended-regexp --quiet 'YOUR_(NAME|PERSONAL_EMAIL)' "$ROOT/git/.gitconfig.local"; then
+  warn "git/.gitconfig.local still has placeholder identity values"
   NEEDS_EDIT=1
+else
+  info "git/.gitconfig.local identity values look filled in"
 fi
 
-if grep -Eq 'YOUR_(WORK_NAME|WORK_EMAIL)' "$ROOT/git/.gitconfig.work"; then
+if grep --extended-regexp --quiet 'YOUR_(WORK_NAME|WORK_EMAIL)' "$ROOT/git/.gitconfig.work"; then
+  warn "git/.gitconfig.work still has placeholder identity values"
   NEEDS_EDIT=1
+else
+  info "git/.gitconfig.work identity values look filled in"
 fi
 
 if [[ "$NEEDS_EDIT" -eq 1 ]]; then
@@ -46,4 +64,6 @@ if [[ "$NEEDS_EDIT" -eq 1 ]]; then
   echo "  ${ROOT#"$HOME"/}/git/.gitconfig.local"
   echo "  ${ROOT#"$HOME"/}/git/.gitconfig.work"
   echo
+else
+  echo "Local Git config files are ready."
 fi

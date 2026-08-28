@@ -42,7 +42,7 @@ Krew-installed kubectl plugins are added to PATH by `bash/.bashrc.d/10-path.sh` 
 Installed with:
 
 ```bash
-mise install -y
+mise install --yes
 mise run tools:install
 ```
 

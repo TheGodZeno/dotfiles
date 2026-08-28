@@ -13,3 +13,6 @@ ssh/
 git/.gitconfig.local
 git/.gitconfig.work
 git/.gitconfig-work
+
+# Machine-local Starship theme selection
+starship/.config/starship/current.toml

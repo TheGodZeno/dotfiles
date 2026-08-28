@@ -3,8 +3,17 @@ set -euo pipefail
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
+info() {
+  printf '  -> %s\n' "$1"
+}
+
+warn() {
+  printf '  !! %s\n' "$1"
+}
+
 install_fedora() {
-  sudo dnf install -y \
+  info "installing Fedora/RHEL packages with dnf"
+  sudo dnf --assumeyes install \
     git stow curl unzip tar xz \
     bash-completion ca-certificates openssh-clients \
     eza fd-find ripgrep fzf bat jq yq git-delta shellcheck shfmt \
@@ -12,8 +21,10 @@ install_fedora() {
 }
 
 install_ubuntu() {
+  info "updating apt package indexes"
   sudo apt-get update
-  sudo apt-get install -y \
+  info "installing Ubuntu/Debian packages with apt-get"
+  sudo apt-get install --yes \
     git stow curl unzip tar xz-utils \
     bash-completion ca-certificates openssh-client \
     eza fd-find ripgrep fzf bat jq git-delta shellcheck shfmt \
@@ -22,29 +33,45 @@ install_ubuntu() {
 
 install_mise() {
   if ! has mise; then
+    info "mise not found; installing to ~/.local/bin"
     curl https://mise.run | sh
+  else
+    info "mise already installed: $(command -v mise)"
   fi
 }
 
 install_starship() {
   if ! has starship; then
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    info "starship not found; installing with official installer"
+    curl --silent --show-error https://starship.rs/install.sh | sh -s -- --yes
+  else
+    info "starship already installed: $(command -v starship)"
   fi
 }
 
 case "${1:-}" in
-  --no-packages) install_mise; install_starship; exit 0 ;;
+  --no-packages)
+    echo "==> Installing user-level tools only"
+    install_mise
+    install_starship
+    exit 0
+    ;;
 esac
 
+echo "==> Installing bootstrap tools"
 if [[ -r /etc/os-release ]]; then
   # shellcheck disable=SC1091
   . /etc/os-release
+  info "detected distro: ${ID:-unknown}"
   case "${ID:-}" in
     fedora|rhel|centos) install_fedora ;;
     ubuntu|debian) install_ubuntu ;;
-    *) echo "unknown distro: ${ID:-unknown}; install packages manually" >&2 ;;
+    *) warn "unknown distro: ${ID:-unknown}; install packages manually" ;;
   esac
+else
+  warn "cannot read /etc/os-release; install packages manually"
 fi
 
 install_mise
 install_starship
+echo "==> Bootstrap tools ready"

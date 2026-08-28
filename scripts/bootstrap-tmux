@@ -2,13 +2,32 @@
 set -euo pipefail
 
 TPM_DIR="$HOME/.local/share/tmux/plugins/tpm"
+TPM_PARENT="$(dirname "$TPM_DIR")"
 
-mkdir -p "$(dirname "$TPM_DIR")"
+info() {
+  printf '  -> %s\n' "$1"
+}
+
+warn() {
+  printf '  !! %s\n' "$1"
+}
+
+echo "==> Preparing tmux TPM"
+info "plugin directory: $TPM_DIR"
+
+mkdir --parents "$TPM_PARENT"
+info "ensured parent directory: $TPM_PARENT"
 
 if [[ ! -d "$TPM_DIR" ]]; then
+  info "TPM not found; cloning"
   git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
 else
-  git -C "$TPM_DIR" pull --ff-only || true
+  info "TPM exists; updating with fast-forward pull"
+  if git --git-dir "$TPM_DIR/.git" --work-tree "$TPM_DIR" pull --ff-only; then
+    info "TPM is up to date"
+  else
+    warn "TPM update failed; continuing with existing checkout"
+  fi
 fi
 
 echo "tmux TPM ready. Open tmux and press prefix + I to install plugins."
