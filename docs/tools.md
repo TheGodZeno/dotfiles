@@ -37,6 +37,8 @@ mise/.config/mise/config.toml
 
 The `mise` Stow package also links `~/.local/bin/kubectl-krew`, a small wrapper that lets `kubectl krew ...` call the mise-installed `krew` binary.
 
+Krew-installed kubectl plugins are added to PATH by `bash/.bashrc.d/10-path.sh` from `${KREW_ROOT:-$HOME/.krew}/bin`.
+
 Installed with:
 
 ```bash
